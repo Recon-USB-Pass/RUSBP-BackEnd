@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Archivo de salida
+OUTPUT_FILE="gpt.txt"
+> "$OUTPUT_FILE"  # vacía si ya existe
+
+# Función para procesar una carpeta
+process_folder() {
+    local folder="$1"
+    echo "🗂️ Procesando carpeta: $folder" >> "$OUTPUT_FILE"
+
+    for file in "$folder"/*.cs; do
+        echo "===== $(basename "$file") =====" >> "$OUTPUT_FILE"
+        cat "$file" >> "$OUTPUT_FILE"
+        echo -e "\n\n" >> "$OUTPUT_FILE"
+    done
+}
+
+# Procesar Controllers y Models
+process_folder "Controllers"
+process_folder "Models"
+
+echo "✅ Listo. Guardado en $OUTPUT_FILE"
