@@ -7,4 +7,7 @@ public class Usuario
     public string Nombre { get; set; } = default!;
     public string PinHash { get; set; } = default!;
     public ICollection<DispositivoUSB> USBs { get; set; } = [];
+
+    public string Ip { get; set; } = "";
+    public string Mac { get; set; } = "";
 }
