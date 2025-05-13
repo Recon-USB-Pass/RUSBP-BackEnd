@@ -1,7 +1,7 @@
+using Backend_Sistema_Central.DTOs;
 using Backend_Sistema_Central.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Backend_Sistema_Central.Dtos;
 
 namespace Backend_Sistema_Central.Controllers;
 
@@ -9,36 +9,51 @@ namespace Backend_Sistema_Central.Controllers;
 [Route("api/[controller]")]
 public class UsuariosController(ApplicationDbContext db) : ControllerBase
 {
-    [HttpPost]
-    public async Task<IActionResult> Crear(Usuario u)
-    {
-        u.PinHash = BCrypt.Net.BCrypt.HashPassword(u.PinHash);
-        db.Usuarios.Add(u);
-        await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(Get), new { id = u.Id }, u);
-    }
-
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<Usuario>> Get(int id)
-    {
-        var usuario = await db.Usuarios.Include(u => u.USBs).FirstOrDefaultAsync(u => u.Id == id);
-        return usuario is null ? NotFound() : usuario;
-    }
-    // ✅ NUEVO: Endpoint que necesita el agente local
+    /* ------------------------ GET: lista ------------------------ */
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UsuarioDto>>> GetAll()
-    {
-        var usuarios = await db.Usuarios
-            .Select(u => new UsuarioDto
-            {
-                Id = u.Id,
-                Nombre = u.Nombre,
-                Rut = u.Rut,
-                Ip = u.Ip,
-                Mac = u.Mac
-            })
-            .ToListAsync();
+    public async Task<IEnumerable<UsuarioDto>> GetAll()
+        => await db.Usuarios
+                   .Select(u => new UsuarioDto(
+                       u.Id,
+                       u.Rut,
+                       u.Nombre,
+                       u.Ip,
+                       u.Mac,
+                       u.SerialUsb))
+                   .ToListAsync();
 
-        return Ok(usuarios);
+    /* -------------------- GET: por ID --------------------------- */
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<UsuarioDto>> GetById(int id)
+    {
+        var dto = await db.Usuarios
+                          .Where(u => u.Id == id)
+                          .Select(u => new UsuarioDto(
+                              u.Id,
+                              u.Rut,
+                              u.Nombre,
+                              u.Ip,
+                              u.Mac,
+                              u.SerialUsb))
+                          .SingleOrDefaultAsync();
+
+        return dto is null ? NotFound() : Ok(dto);
+    }
+
+    /* ----------------------- POST: crear ------------------------ */
+    public record CrearDto(string Rut, string Nombre, string Pin);
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CrearDto dto)
+    {
+        var usuario = new Usuario
+        {
+            Rut     = dto.Rut,
+            Nombre  = dto.Nombre,
+            PinHash = BCrypt.Net.BCrypt.HashPassword(dto.Pin)
+        };
+        db.Usuarios.Add(usuario);
+        await db.SaveChangesAsync();
+        return Ok(new { usuario.Id });
     }
 }

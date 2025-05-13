@@ -1,31 +1,66 @@
+using System.Security.Cryptography;              // ⬅️  Faltaba
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography; 
-namespace Backend_Sistema_Central.Services;
+using Microsoft.Extensions.Configuration;
 
-public interface ICertificateValidator
+namespace Backend_Sistema_Central.Services
 {
-    bool IsSignedByRoot(string pem, out X509Certificate2 cert);
-    bool VerifySignature(string serial, byte[] challenge, byte[] signature);
-}
-
-public class CertificateValidator(ApplicationDbContext db, IConfiguration cfg) : ICertificateValidator
-{
-    private readonly X509Certificate2 _root = new(
-        Path.Combine(AppContext.BaseDirectory, "certs", "rootCA.pem"));
-
-    public bool IsSignedByRoot(string pem, out X509Certificate2 cert)
+    public interface ICertificateValidator
     {
-        cert = X509Certificate2.CreateFromPem(pem);
-        return cert.Verify() && cert.Issuer == _root.Subject;
+        bool IsSignedByRoot(string pem, out X509Certificate2 cert);
+        bool VerifySignature(X509Certificate2 cert, string challengeB64, string signatureB64);
     }
 
-    public bool VerifySignature(string serial, byte[] challenge, byte[] signature)
+    public class CertificateValidator : ICertificateValidator
     {
-        var usb = db.DispositivosUSB.FirstOrDefault(u => u.Serial == serial && !u.Revoked);
-        if (usb is null) return false;
+        private readonly X509Certificate2 _rootCert;
 
-        using var cert = new X509Certificate2(Convert.FromHexString(usb.Thumbprint));
-        using var rsa  = cert.GetRSAPublicKey()!;
-        return rsa.VerifyData(challenge, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        public CertificateValidator(IConfiguration cfg)
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "certs", "rootCA.pem");
+            _rootCert = new X509Certificate2(path);
+        }
+
+        public bool IsSignedByRoot(string pem, out X509Certificate2 cert)
+        {
+            try
+            {
+                cert = X509Certificate2.CreateFromPem(pem);
+
+                using var chain = new X509Chain();
+                chain.ChainPolicy.ExtraStore.Add(_rootCert);
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                chain.ChainPolicy.RevocationMode    = X509RevocationMode.NoCheck;
+
+                return chain.Build(cert);
+            }
+            catch
+            {
+                cert = null!;
+                return false;
+            }
+        }
+
+        /* NUEVO — validación de firma */
+        public bool VerifySignature(X509Certificate2 cert,
+                                    string challengeB64,
+                                    string signatureB64)
+        {
+            try
+            {
+                byte[] challenge = Convert.FromBase64String(challengeB64);
+                byte[] signature = Convert.FromBase64String(signatureB64);
+
+                using var rsa = cert.GetRSAPublicKey();
+                return rsa!.VerifyData(
+                    challenge,
+                    signature,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

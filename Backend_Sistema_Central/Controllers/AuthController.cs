@@ -3,70 +3,73 @@ using Backend_Sistema_Central.Models;
 using Backend_Sistema_Central.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Backend_Sistema_Central.Controllers;
 
 [ApiController]
 [Route("api/auth")]
 public class AuthController(
-    ApplicationDbContext        db,
-    ICertificateValidator       certValidator,
-    IChallengeService           challenges) : ControllerBase
+        ApplicationDbContext  db,
+        ICertificateValidator certValidator,
+        IChallengeService     challenges) : ControllerBase
 {
-    // ───────────────────────────────────────── Verify USB
+    // ──────────────────────────────── 1)  Verificación inicial del USB
     [HttpPost("verify-usb")]
     public async Task<IActionResult> VerifyUsb([FromBody] UsbVerificationDto dto)
     {
-        if (!certValidator.IsSignedByRoot(dto.CertPem, out var cert))
+        //-- 1.a  ¿Firma de nuestra CA?
+        if (!certValidator.IsSignedByRoot(dto.CertPem, out X509Certificate2 cert))
             return Unauthorized("Certificado no firmado por la CA");
 
-        var thumb = Convert.ToHexString(cert.GetCertHash());
+        //-- 1.b  Persistimos / actualizamos el dispositivo
+        string thumb = Convert.ToHexString(cert.GetCertHash());
+        var usb = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == dto.Serial);
 
-        var existing = await db.DispositivosUSB
-                               .FirstOrDefaultAsync(u => u.Serial == dto.Serial);
-
-        if (existing is null)
+        if (usb is null)
         {
-            db.DispositivosUSB.Add(new DispositivoUSB
+            usb = new DispositivoUSB
             {
                 Serial     = dto.Serial,
                 Thumbprint = thumb,
                 FechaAlta  = DateTime.UtcNow
-            });
+            };
+            db.DispositivosUSB.Add(usb);
         }
         else
         {
-            existing.Thumbprint = thumb;
-            existing.Revoked    = false;
+            usb.Thumbprint = thumb;
+            usb.Revoked   = false;
         }
-
         await db.SaveChangesAsync();
 
-        // Entregamos un challenge que debe firmar el USB
-        var challenge = challenges.Create(dto.Serial);
-        return Ok(Convert.ToBase64String(challenge));
+        //-- 1.c  Generamos challenge y recordamos *cert+challenge* en memoria
+        byte[] challengeBytes = challenges.Create(dto.Serial, cert);   // Nuevo overload
+        string challengeB64   = Convert.ToBase64String(challengeBytes);
+
+        return Ok(challengeB64);
     }
 
-    // ───────────────────────────────────────── Login con firma
+    // ──────────────────────────────── 2)  Login con firma del challenge
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        var challenge = challenges.Get(dto.Serial);
-        if (challenge.Length == 0) return Unauthorized("Challenge vencido");
+        //-- 2.a  ¿Existe challenge pendiente?
+        if (!challenges.TryGet(dto.Serial, out X509Certificate2? cert, out string? challengeB64))
+            return Unauthorized("Challenge vencido");
 
-        var sigBytes = Convert.FromBase64String(dto.SignatureBase64);
-        if (!certValidator.VerifySignature(dto.Serial, challenge, sigBytes))
+        //-- 2.b  Firma válida   (firma = rsa-pubKey(cert).Verify(challenge))
+        if (!certValidator.VerifySignature(cert!, challengeB64!, dto.SignatureBase64))
             return Unauthorized("Firma inválida");
 
-        // Pin
+        //-- 2.c  PIN
         var usb = await db.DispositivosUSB.Include(u => u.Usuario)
                                           .FirstOrDefaultAsync(u => u.Serial == dto.Serial);
-        if (usb?.Usuario is null) return Unauthorized("USB sin usuario");
-
+        if (usb?.Usuario is null)        return Unauthorized("USB sin usuario asignado");
         if (!BCrypt.Net.BCrypt.Verify(dto.Pin, usb.Usuario.PinHash))
             return Unauthorized("PIN incorrecto");
 
-        // Log OK
+        //-- 2.d  Log OK
         db.Logs.Add(new LogActividad
         {
             UsuarioId  = usb.UsuarioId,
@@ -80,6 +83,40 @@ public class AuthController(
         return Ok("Login exitoso");
     }
 }
+
+
+/*IMPORTANTEEEEEE
+
+Esto es para el bash dentro del usb, para validar que la login funciona
+
+# ==== Paso 1: CHALLENGE ====
+SERIAL="040174132B54FB6E1E0E"
+CERT=$(sed ':a;N;$!ba;s/\n/\\n/g' device_cert.pem | sed 's/"/\\"/g')
+JSON=$(printf '{"serial":"%s","certPem":"%s"}' "$SERIAL" "$CERT")
+
+CHALL=$(curl -sk https://10.145.0.75:8443/api/auth/verify-usb \
+             -H "Content-Type: application/json" -d "$JSON")
+
+echo "Challenge = $CHALL"
+
+# ==== Paso 2: FIRMA (¡sin tardar más de 2 min!) ====
+echo "$CHALL" | base64 -d > challenge.bin
+openssl dgst -sha256 -sign device_key.pem -out sig.bin challenge.bin
+SIG_B64=$(base64 -w0 sig.bin)
+
+# ==== Paso 3: LOGIN ====
+curl -sk https://10.145.0.75:8443/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d "{
+           \"serial\":\"$SERIAL\",
+           \"signatureBase64\":\"$SIG_B64\",
+           \"pin\":\"1234\",
+           \"macAddress\":\"AABBCCDDEEFF\"
+         }"
+
+
+*/
+
 
 
 

@@ -34,7 +34,14 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICertificateValidator, CertificateValidator>();
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
 //new_end
-builder.Services.AddControllers();
+builder.Services
+       .AddControllers()
+       .AddJsonOptions(o =>
+       {
+           o.JsonSerializerOptions.ReferenceHandler =
+               System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+       });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

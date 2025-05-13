@@ -1,10 +1,11 @@
-namespace Backend_Sistema_Central.Dtos;
+namespace Backend_Sistema_Central.DTOs;
 
-public class UsuarioDto
-{
-    public int Id { get; set; }
-    public string Nombre { get; set; } = "";
-    public string Rut { get; set; } = "";
-    public string Ip { get; set; } = "";
-    public string Mac { get; set; } = "";
-}
+public record UsuarioDto
+(
+    int    Id,
+    string Rut,
+    string Nombre,
+    string? Ip,
+    string? Mac,
+    string? SerialUsb
+);
