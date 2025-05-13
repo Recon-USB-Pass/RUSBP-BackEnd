@@ -1,7 +1,13 @@
 namespace Backend_Sistema_Central.DTOs;
 
-public record LoginDto(int UsuarioId, string Pin, string MacAddress);
+// 1. Envío de certificado del USB al servidor
+public record UsbVerificationDto(string Serial, string CertPem);
 
+// 2. Login basado en desafío y firma
+public record LoginDto(string Serial, string SignatureBase64, string Pin, string MacAddress);
+
+// 3. Lote de logs enviados por un agente
+public record LogEntryDto(string Serial, string TipoEvento, DateTime FechaHora, string? Detalle);
 
 /*
 

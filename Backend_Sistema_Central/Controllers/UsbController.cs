@@ -7,7 +7,7 @@ namespace Backend_Sistema_Central.Controllers;
 [Route("api/[controller]")]
 public class UsbController(ApplicationDbContext db) : ControllerBase
 {
-    public record AsignarDto(string Serial, string CertThumbprint, int UsuarioId);
+    public record AsignarDto(string Serial, string Thumbprint, int UsuarioId);
 
     [HttpPost("asignar")]
     public async Task<IActionResult> Asignar(AsignarDto dto)
@@ -17,10 +17,10 @@ public class UsbController(ApplicationDbContext db) : ControllerBase
 
         db.DispositivosUSB.Add(new DispositivoUSB
         {
-            Serial = dto.Serial,
-            CertThumbprint = dto.CertThumbprint,
-            FechaAsignacion = DateTime.UtcNow,
-            UsuarioId = dto.UsuarioId
+            Serial      = dto.Serial,
+            Thumbprint  = dto.Thumbprint,
+            FechaAlta   = DateTime.UtcNow,
+            UsuarioId   = dto.UsuarioId
         });
         await db.SaveChangesAsync();
         return Ok("USB asignado");

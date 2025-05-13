@@ -1,15 +1,25 @@
 using Backend_Sistema_Central;
 using Backend_Sistema_Central.Hubs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Server.Kestrel.Https;  // ← AÑADIR
+using Backend_Sistema_Central.Services; 
 
 var builder = WebApplication.CreateBuilder(args);
+var pfxPass = Environment.GetEnvironmentVariable("PFX_PASSWORD") ?? "changeit";
 
 // ──────────────────────────────────────────────
 // 1. Kestrel:     SOLO HTTP 8080 (sin TLS)
 // ──────────────────────────────────────────────
 builder.WebHost.ConfigureKestrel(k =>
 {
-    k.ListenAnyIP(8080);      // http://localhost:8080
+    k.ListenAnyIP(8080);                                          // Dev
+    k.ListenAnyIP(8443, l =>                                      // Prod
+    {
+        l.UseHttps("certs/server.pfx", pfxPass, https =>
+        {
+            https.ClientCertificateMode = ClientCertificateMode.AllowCertificate;
+        });
+    });
 });
 
 // ──────────────────────────────────────────────
@@ -19,6 +29,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddSignalR();
+//new
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ICertificateValidator, CertificateValidator>();
+builder.Services.AddSingleton<IChallengeService, ChallengeService>();
+//new_end
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -33,7 +48,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+//new
+app.UseHttpsRedirection();
+//new_end
 app.UseAuthorization();
 
 app.MapControllers();

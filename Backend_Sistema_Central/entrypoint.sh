@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -e
-until pg_isready -h db -p 5432 -U seguridad; do
-  echo "⏳ Esperando a PostgreSQL..."
+
+echo "⏳ Esperando a que la base de datos esté lista..."
+until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; do
   sleep 2
 done
+
+echo "✅ Base de datos lista; ejecutando migraciones EF Core..."
 dotnet Backend_Sistema_Central.dll --migrate-and-run
+echo "✅ Migraciones completadas; ejecutando la aplicación..."

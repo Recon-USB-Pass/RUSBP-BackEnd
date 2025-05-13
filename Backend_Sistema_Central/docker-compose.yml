@@ -1,16 +1,29 @@
 version: "3.9"
+
 services:
   api:
     build: .
+    container_name: rusbp-api
     ports:
-      - "8080:8080"     # VS debug http
+      - "8080:8080"   # HTTP  (Swagger en dev)
+      - "8443:8443"   # HTTPS (cliente real)
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      # Contraseña para el certificado
+      PFX_PASSWORD: usbpass
+      # Variables para entrypoint.sh
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: seguridad
+      DB_PASS: seguridad123
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16
+    container_name: rusbp-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: seguridad
       POSTGRES_PASSWORD: seguridad123

@@ -8,6 +8,7 @@ public class Usuario
     public string PinHash { get; set; } = default!;
     public ICollection<DispositivoUSB> USBs { get; set; } = [];
 
-    public string Ip { get; set; } = "";
-    public string Mac { get; set; } = "";
+    public string? Ip { get; set; }                // NUEVO
+    public string? Mac { get; set; }               // NUEVO
+    public string? SerialUsb { get; set; }         // NUEVO
 }
