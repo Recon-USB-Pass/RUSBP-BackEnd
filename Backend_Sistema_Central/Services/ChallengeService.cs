@@ -29,7 +29,7 @@ public interface IChallengeService
 
 public sealed class ChallengeService(IMemoryCache cache) : IChallengeService
 {
-    private static readonly TimeSpan TTL = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan TTL = TimeSpan.FromMinutes(5);
 
     /* ─────────────────────────────── 1) Sólo challenge ─────────────────────────────── */
     public byte[] Create(string serial)

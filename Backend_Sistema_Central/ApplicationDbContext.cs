@@ -12,7 +12,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
-        mb.Entity<Usuario>().HasIndex(u => u.Rut).IsUnique();
-        mb.Entity<DispositivoUSB>().HasIndex(u => u.Serial).IsUnique();
+        mb.Entity<DispositivoUSB>()
+            .HasIndex(u => u.Serial)               // único
+            .IsUnique();
+        mb.Entity<DispositivoUSB>()
+            .HasOne(d => d.Usuario)
+            .WithMany(u => u.USBs)
+            .HasForeignKey(d => d.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade)      // lo que prefieras
+            .IsRequired(false); 
     }
 }

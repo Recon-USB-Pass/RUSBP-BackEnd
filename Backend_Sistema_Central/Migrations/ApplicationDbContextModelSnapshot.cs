@@ -44,7 +44,7 @@ namespace Backend_Sistema_Central.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("UsuarioId")
+                    b.Property<int?>("UsuarioId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -122,9 +122,6 @@ namespace Backend_Sistema_Central.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Rut")
-                        .IsUnique();
-
                     b.ToTable("Usuarios");
                 });
 
@@ -133,8 +130,7 @@ namespace Backend_Sistema_Central.Migrations
                     b.HasOne("Backend_Sistema_Central.Models.Usuario", "Usuario")
                         .WithMany("USBs")
                         .HasForeignKey("UsuarioId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Usuario");
                 });

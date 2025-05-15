@@ -28,7 +28,7 @@ public class LogsController(ApplicationDbContext db) : ControllerBase
 
             db.Logs.Add(new LogActividad
             {
-                UsuarioId  = usb.UsuarioId,
+                UsuarioId  = usb!.UsuarioId.GetValueOrDefault(), // 0 si no está asignado
                 TipoEvento = e.TipoEvento,
                 IP         = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "",
                 MAC        = "",                // opcional en lote

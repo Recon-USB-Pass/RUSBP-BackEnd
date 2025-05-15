@@ -59,6 +59,12 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 //new_end
 app.UseAuthorization();
+app.Use(async (ctx, next) =>
+{
+    var logPath = Path.Combine(AppContext.BaseDirectory, "route_hits.log");
+    File.AppendAllText(logPath, $"{DateTime.UtcNow:u}  {ctx.Request.Method} {ctx.Request.Path}\n");
+    await next();
+});
 
 app.MapControllers();
 app.MapHub<AdminHub>("/hub/admin");
@@ -73,5 +79,8 @@ if (args.Contains("--migrate-and-run"))
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 }
+Console.WriteLine("Hash aqui CTM");
+Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("1234"));
+Console.WriteLine("Hash aqui CTM");
 
 app.Run();
