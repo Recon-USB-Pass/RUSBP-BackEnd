@@ -7,36 +7,52 @@ namespace Backend_Sistema_Central.Controllers;
 
 [ApiController]
 [Route("api/logs")]
-public class LogsController(ApplicationDbContext db) : ControllerBase
+public class LogsController(ApplicationDbContext db, ILogger<LogsController> logger) : ControllerBase
 {
     // GET /api/logs?page=1&pageSize=50
     [HttpGet]
     public async Task<IEnumerable<LogActividad>> Get(int page = 1, int pageSize = 50) =>
-        await db.Logs.OrderByDescending(l => l.FechaHora)
+        await db.Logs.OrderByDescending(l => l.Timestamp)
                      .Skip((page - 1) * pageSize)
                      .Take(pageSize)
                      .ToListAsync();
 
     // POST /api/logs  (lote enviado por agente)
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] IEnumerable<LogEntryDto> batch)
+    public async Task<IActionResult> PostBatch([FromBody] List<LogEventDto> eventos)
     {
-        foreach (var e in batch)
-        {
-            var usb = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == e.Serial);
-            if (usb is null) continue; // descartar si USB desconocido
+        if (eventos == null || eventos.Count == 0)
+            return BadRequest("El lote de logs está vacío.");
 
-            db.Logs.Add(new LogActividad
+        var nuevos = new List<LogActividad>();
+        var procesados = new List<string>();
+
+        foreach (var e in eventos)
+        {
+            if (await db.Logs.AnyAsync(l => l.EventId == e.EventId))
+                continue; // Duplicado: se ignora
+
+            nuevos.Add(new LogActividad
             {
-                UsuarioId  = usb!.UsuarioId.GetValueOrDefault(), // 0 si no está asignado
-                TipoEvento = e.TipoEvento,
-                IP         = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "",
-                MAC        = "",                // opcional en lote
-                FechaHora  = e.FechaHora.ToUniversalTime(),
-                Detalle    = e.Detalle
+                EventId    = e.EventId,
+                UserRut    = e.UserRut,
+                UsbSerial  = e.UsbSerial.ToUpperInvariant(),
+                EventType  = e.EventType,
+                Ip         = e.Ip,
+                Mac        = e.Mac,
+                Timestamp  = e.Timestamp
             });
+            procesados.Add(e.EventId);
         }
-        await db.SaveChangesAsync();
-        return Accepted();
+
+        if (nuevos.Count > 0)
+        {
+            db.Logs.AddRange(nuevos);
+            await db.SaveChangesAsync();
+        }
+
+        logger.LogInformation("Batch logs recibidos: {Count}", nuevos.Count);
+
+        return Ok(procesados);
     }
 }

@@ -96,6 +96,8 @@ public class AuthController(
             return Unauthorized("PIN incorrecto");
 
         // 2.d – Log OK
+/*
+
         db.Logs.Add(new LogActividad
         {
             UsuarioId  = usb.UsuarioId ?? 0,
@@ -105,7 +107,7 @@ public class AuthController(
             FechaHora  = DateTime.UtcNow
         });
         await db.SaveChangesAsync();
-
+*/
         return Ok("Login exitoso");
     }
 }
