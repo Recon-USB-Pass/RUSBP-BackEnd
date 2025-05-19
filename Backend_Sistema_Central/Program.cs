@@ -8,14 +8,31 @@ var builder = WebApplication.CreateBuilder(args);
 var pfxPass = Environment.GetEnvironmentVariable("PFX_PASSWORD") ?? "changeit";
 
 // ──────────────────────────────────────────────
-// 1. Kestrel:     SOLO HTTP 8080 (sin TLS)
+// 1. Kestrel:     HTTP 8080 + HTTPS 8443
 // ──────────────────────────────────────────────
 builder.WebHost.ConfigureKestrel(k =>
 {
-    k.ListenAnyIP(8080);                                          // Dev
-    k.ListenAnyIP(8443, l =>                                      // Prod
+    // HTTP Dev
+    k.ListenAnyIP(8080);
+
+    // HTTPS Prod
+    var pfxPath = Path.Combine(AppContext.BaseDirectory, "certs", "server.pfx");
+
+    if (!File.Exists(pfxPath))
     {
-        l.UseHttps("certs/server.pfx", pfxPass, https =>
+        Console.WriteLine($"❌ No se encontró el certificado: {pfxPath}");
+        return; // 🔕 Kestrel sigue solo con HTTP
+    }
+
+    if (string.IsNullOrWhiteSpace(pfxPass))
+    {
+        Console.WriteLine("❌ Contraseña del .pfx vacía o no definida (PFX_PASSWORD)");
+        return;
+    }
+
+    k.ListenAnyIP(8443, l =>
+    {
+        l.UseHttps(pfxPath, pfxPass, https =>
         {
             https.ClientCertificateMode = ClientCertificateMode.AllowCertificate;
         });
@@ -32,6 +49,9 @@ builder.Services.AddSignalR();
 //new
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICertificateValidator, CertificateValidator>();
+builder.Services.AddScoped<IUsbStatusService, UsbStatusService>();
+
+
 builder.Services.AddSingleton<IChallengeService, ChallengeService>();
 //new_end
 builder.Services
