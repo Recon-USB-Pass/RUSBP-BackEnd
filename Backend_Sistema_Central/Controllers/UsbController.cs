@@ -9,47 +9,48 @@ namespace Backend_Sistema_Central.Controllers;
 
 [ApiController]
 [Route("api/usb")]
-// ─────────── inyección por constructor primario (C# 12) ───────────
 public class UsbController(ApplicationDbContext _db, IUsbStatusService _status) : ControllerBase
 {
-    /* ─────────────────── 1. Asignar vía JSON ─────────────────── */
-    public record AsignarDto(string Serial, int UsuarioId);
+    // Ahora el DTO usa UsuarioRut en vez de UsuarioId
+    public record AsignarDto(string Serial, string UsuarioRut);
 
+    /// POST /api/usb/asignar
     [HttpPost("asignar")]
     public async Task<IActionResult> Asignar([FromBody] AsignarDto dto)
     {
-        var usb = await _db.DispositivosUSB
-                           .FirstOrDefaultAsync(u => u.Serial == dto.Serial);
+        var usb = await _db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == dto.Serial);
+        if (usb is null) return NotFound("Serial inexistente");
+        if (usb.UsuarioId != null) return Conflict("USB ya asignado");
 
-        if (usb is null)            return NotFound("Serial inexistente");
-        if (usb.UsuarioId != null)  return Conflict("USB ya asignado");
+        var user = await _db.Usuarios.FirstOrDefaultAsync(u => u.Rut == dto.UsuarioRut);
+        if (user is null) return NotFound("Usuario no encontrado");
 
-        usb.UsuarioId = dto.UsuarioId;
+        usb.UsuarioId = user.Id;
         await _db.SaveChangesAsync();
-        return Ok("USB asignado al usuario");
+        return Ok(new { usb.Serial, user.Rut, Message = "USB asignado al usuario" });
     }
 
-    /* ─────────────── 2. Enlace rápido vía URL ─────────────── */
-    // POST api/usb/0401.../link/2
-    [HttpPost("{serial}/link/{userId:int}")]
-    public async Task<IActionResult> Link(string serial, int userId)
+    // Puedes dejar los otros métodos para compatibilidad o administración.
+    // POST /api/usb/{serial}/link/{rut}
+    [HttpPost("{serial}/link/{rut}")]
+    public async Task<IActionResult> Link(string serial, string rut)
     {
-        var usb  = await _db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == serial);
-        var user = await _db.Usuarios        .FirstOrDefaultAsync(u => u.Id     == userId);
+        var usb = await _db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == serial);
+        var user = await _db.Usuarios.FirstOrDefaultAsync(u => u.Rut == rut);
 
-        if (usb  is null || user is null) return NotFound();
-        if (usb.UsuarioId != null)        return Conflict("USB ya asignado");
+        if (usb is null || user is null) return NotFound();
+        if (usb.UsuarioId != null) return Conflict("USB ya asignado");
 
-        usb.UsuarioId = userId;
+        usb.UsuarioId = user.Id;
         await _db.SaveChangesAsync();
-        return Ok(new { usb.Id, usb.Serial, usb.UsuarioId });
+        return Ok(new { usb.Serial, user.Rut, Message = "Enlace completado" });
     }
 
-    /* ─────────────── 3. Estado online del USB ─────────────── */
-    // GET api/usb/5/online  → true / false
     [HttpGet("{serial}/online")]
     public ActionResult<bool> IsUsbOnline(string serial)
-    => Ok(_status.IsUsbOnline(serial));
+        => Ok(_status.IsUsbOnline(serial));
+}
+
 
 
 
@@ -76,4 +77,3 @@ public class UsbController(ApplicationDbContext _db, IUsbStatusService _status) 
         return Ok("USB registrado correctamente");
     }
     */
-}

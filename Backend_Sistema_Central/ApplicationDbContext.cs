@@ -21,5 +21,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
             .HasForeignKey(d => d.UsuarioId)
             .OnDelete(DeleteBehavior.Cascade)      // lo que prefieras
             .IsRequired(false); 
+        mb.Entity<Usuario>()
+            .HasIndex(u => u.Rut)
+            .IsUnique();
     }
 }

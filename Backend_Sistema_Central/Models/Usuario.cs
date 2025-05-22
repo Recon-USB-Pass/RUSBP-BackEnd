@@ -6,9 +6,12 @@ public class Usuario
     public string Rut { get; set; } = default!;
     public string Nombre { get; set; } = default!;
     public string PinHash { get; set; } = default!;
+    public string? Depto { get; set; }
+    public string? Email { get; set; }
+    public string? Rol { get; set; }
     public ICollection<DispositivoUSB> USBs { get; set; } = [];
 
-    public string? Ip { get; set; }                // NUEVO
-    public string? Mac { get; set; }               // NUEVO
-    public string? SerialUsb { get; set; }         // NUEVO
+    public string? Ip { get; set; }
+    public string? Mac { get; set; }
+    public string? SerialUsb { get; set; }
 }
