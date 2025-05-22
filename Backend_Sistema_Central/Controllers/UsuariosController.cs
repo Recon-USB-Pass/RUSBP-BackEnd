@@ -2,6 +2,7 @@ using Backend_Sistema_Central.DTOs;
 using Backend_Sistema_Central.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 namespace Backend_Sistema_Central.Controllers;
 
@@ -10,13 +11,13 @@ namespace Backend_Sistema_Central.Controllers;
 public class UsuariosController(ApplicationDbContext db) : ControllerBase
 {
     public record CrearDto(
-        string Rut,
-        string Nombre,
-        string? Depto,
-        string? Email,
-        string? Rol,
-        string? PinHash,
-        string? Pin
+    [property: JsonPropertyName("rut")] string Rut,
+    [property: JsonPropertyName("nombre")] string Nombre,
+    [property: JsonPropertyName("depto")] string? Depto,
+    [property: JsonPropertyName("email")] string? Email,
+    [property: JsonPropertyName("rol")] string? Rol,
+    [property: JsonPropertyName("pinHash")] string? PinHash,
+    [property: JsonPropertyName("pin")] string? Pin
     );
 
     [HttpGet]
@@ -54,27 +55,38 @@ public class UsuariosController(ApplicationDbContext db) : ControllerBase
         return dto is null ? NotFound() : Ok(dto);
     }
 
+    //  UsuariosController.cs  → devolver Id SIEMPRE
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CrearDto dto)
     {
-        string pinHash = dto.PinHash ??
-            (!string.IsNullOrEmpty(dto.Pin) ? BCrypt.Net.BCrypt.HashPassword(dto.Pin) : throw new Exception("PinHash o Pin requerido"));
+        // Imprime el DTO recibido (debug)
+        Console.WriteLine($"DTO recibido ► {System.Text.Json.JsonSerializer.Serialize(dto)}");
 
-        // Opcional: validar Rut único
-        if (await db.Usuarios.AnyAsync(u => u.Rut == dto.Rut))
-            return Conflict("El Rut ya está registrado.");
+        // Determina el hash (acepta pin hash directo o lo hashea si viene en plano)
+        string pinHash = !string.IsNullOrEmpty(dto.PinHash)
+            ? dto.PinHash
+            : (!string.IsNullOrEmpty(dto.Pin)
+                ? BCrypt.Net.BCrypt.HashPassword(dto.Pin)
+                : throw new Exception("PinHash o Pin requerido"));
+
+        Console.WriteLine($"PinHash calculado: {pinHash}");
+        System.Diagnostics.Debug.WriteLine($"PinHash calculado: {pinHash}");
 
         var usuario = new Usuario
         {
-            Rut = dto.Rut,
-            Nombre = dto.Nombre,
+            Rut     = dto.Rut,        // ¡Asegúrate que NO sea null ni string.Empty!
+            Nombre  = dto.Nombre,
             PinHash = pinHash,
-            Depto = dto.Depto,
-            Email = dto.Email,
-            Rol = dto.Rol,
+            Depto   = dto.Depto,
+            Email   = dto.Email,
+            Rol     = dto.Rol,
+            // Otros campos según tu modelo...
         };
+
         db.Usuarios.Add(usuario);
         await db.SaveChangesAsync();
-        return Ok(new { usuario.Id, usuario.Rut });
+        return Ok(new { usuario.Id });
     }
+
+
 }
