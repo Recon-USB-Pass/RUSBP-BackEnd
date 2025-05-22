@@ -1,5 +1,4 @@
 // Controllers/UsbController.cs
-using System.Text.RegularExpressions;
 using Backend_Sistema_Central.Models;
 using Backend_Sistema_Central.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -7,18 +6,46 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend_Sistema_Central.Controllers;
 
-// Controllers/UsbController.cs
 [ApiController]
 [Route("api/usb")]
 public class UsbController(ApplicationDbContext db, IUsbStatusService status) : ControllerBase
 {
-    /* 1.  Asignar vía JSON ------------- */
+    /* 0. Registrar pendrive ------------------------------------------------ */
+    public record CrearUsbDto(string Serial, string? Thumbprint = null);
+
+    [HttpPost]
+    public async Task<IActionResult> Crear([FromBody] CrearUsbDto dto)
+    {
+        var serial = dto.Serial.Trim().ToUpperInvariant();
+        var existente = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == serial);
+        if (existente is not null)
+            return Conflict($"Serial '{serial}' ya registrado (id={existente.Id})");
+
+        var usb = new DispositivoUSB
+        {
+            Serial     = serial,
+            Thumbprint = dto.Thumbprint,
+            FechaAlta  = DateTime.UtcNow,
+            Revoked    = false
+        };
+
+        db.DispositivosUSB.Add(usb);
+        await db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(Crear), new { id = usb.Id }, new { usb.Id, usb.Serial });
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       1)  Asignar USB a un usuario existente
+       ═════════════════════════════════════════════════════════════ */
     public record AsignarDto(string Serial, string UsuarioRut);
 
-    [HttpPost("asignar")]
+    [HttpPost("asignar")]                     // POST  /api/usb/asignar
     public async Task<IActionResult> Asignar([FromBody] AsignarDto dto)
     {
-        var usb  = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == dto.Serial);
+        var serial = dto.Serial.Trim().ToUpperInvariant();
+
+        var usb  = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == serial);
         var user = await db.Usuarios       .FirstOrDefaultAsync(u => u.Rut    == dto.UsuarioRut);
 
         if (usb  is null) return NotFound("Serial inexistente");
@@ -32,10 +59,14 @@ public class UsbController(ApplicationDbContext db, IUsbStatusService status) : 
         return Ok(new { usb.Serial, user.Rut });
     }
 
-    /* 2.  Enlace rápido vía URL -------- */            // opcional
-    [HttpPost("{serial}/link/{rut}")]
+    /* ═══════════════════════════════════════════════════════════════
+       2)  Enlace rápido vía URL  (opcional)
+       ═════════════════════════════════════════════════════════════ */
+    [HttpPost("{serial}/link/{rut}")]         // POST  /api/usb/{serial}/link/{rut}
     public async Task<IActionResult> Link(string serial, string rut)
     {
+        serial = serial.Trim().ToUpperInvariant();
+
         var usb  = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == serial);
         var user = await db.Usuarios       .FirstOrDefaultAsync(u => u.Rut    == rut);
 
@@ -48,35 +79,10 @@ public class UsbController(ApplicationDbContext db, IUsbStatusService status) : 
         return Ok(new { usb.Serial, user.Rut });
     }
 
-    /* 3.  ¿Está online? ---------------- */
-    [HttpGet("{serial}/online")]
-    public ActionResult<bool> IsUsbOnline(string serial) => Ok(status.IsUsbOnline(serial));
+    /* ═══════════════════════════════════════════════════════════════
+       3)  ¿Está online?
+       ═════════════════════════════════════════════════════════════ */
+    [HttpGet("{serial}/online")]              // GET  /api/usb/{serial}/online
+    public ActionResult<bool> IsUsbOnline(string serial)
+        => Ok(status.IsUsbOnline(serial.Trim().ToUpperInvariant()));
 }
-
-
-
-
-
-    /* ──────── (opcional) versión con validación completa ────────
-    public record AsignarAvanzadoDto(string Serial, string Thumbprint, int UsuarioId);
-
-    [HttpPost("asignar-adv")]
-    public async Task<IActionResult> AsignarAvanzado([FromBody] AsignarAvanzadoDto dto)
-    {
-        if (!Regex.IsMatch(dto.Serial, @"^[0-9A-Fa-f]{8,32}$"))
-            return BadRequest("Serial inválido (8-32 caracteres hex)");
-
-        if (_db.DispositivosUSB.Any(u => u.Serial == dto.Serial))
-            return Conflict("USB ya asignado");
-
-        _db.DispositivosUSB.Add(new DispositivoUSB
-        {
-            Serial     = dto.Serial.ToUpperInvariant(),
-            Thumbprint = dto.Thumbprint.ToUpperInvariant(),
-            FechaAlta  = DateTime.UtcNow
-        });
-
-        await _db.SaveChangesAsync();
-        return Ok("USB registrado correctamente");
-    }
-    */

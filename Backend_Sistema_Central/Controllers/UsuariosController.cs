@@ -29,7 +29,6 @@ public class UsuariosController(ApplicationDbContext db) : ControllerBase
                 u.Nombre,
                 u.Ip,
                 u.Mac,
-                u.SerialUsb,
                 u.Depto,
                 u.Email,
                 u.Rol))
@@ -46,7 +45,6 @@ public class UsuariosController(ApplicationDbContext db) : ControllerBase
                 u.Nombre,
                 u.Ip,
                 u.Mac,
-                u.SerialUsb,
                 u.Depto,
                 u.Email,
                 u.Rol))

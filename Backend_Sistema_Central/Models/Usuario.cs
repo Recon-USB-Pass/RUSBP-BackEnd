@@ -13,5 +13,4 @@ public class Usuario
 
     public string? Ip { get; set; }
     public string? Mac { get; set; }
-    public string? SerialUsb { get; set; }
 }

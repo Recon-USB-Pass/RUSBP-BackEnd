@@ -3,6 +3,7 @@ using System;
 using Backend_Sistema_Central;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend_Sistema_Central.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250522162920_UsbThumbprintNullable")]
+    partial class UsbThumbprintNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -130,6 +133,9 @@ namespace Backend_Sistema_Central.Migrations
 
                     b.Property<string>("Rut")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SerialUsb")
                         .HasColumnType("text");
 
                     b.HasKey("Id");

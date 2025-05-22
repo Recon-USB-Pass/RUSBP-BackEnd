@@ -5,7 +5,7 @@ namespace Backend_Sistema_Central.Models
     {
         public int Id { get; set; }
         public string Serial { get; set; } = "";
-        public string Thumbprint { get; set; } = "";
+        public string Thumbprint { get; set; }
         public DateTime FechaAlta { get; set; }
         public bool Revoked { get; set; }
         public int? UsuarioId { get; set; }
