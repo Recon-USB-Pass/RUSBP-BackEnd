@@ -95,20 +95,20 @@ public class AuthController(
         if (!BCrypt.Net.BCrypt.Verify(dto.Pin.Trim(), usb.Usuario.PinHash))
             return Unauthorized("PIN incorrecto");
 
-        // 2.d – Log OK
-/*
+        // 🚩 Aquí construyes el DTO para el frontend
+        var usuarioDto = new UsuarioDto(
+            usb.Usuario.Id,
+            usb.Usuario.Rut,
+            usb.Usuario.Nombre,
+            usb.Usuario.Ip,
+            usb.Usuario.Mac,
+            usb.Usuario.Depto,
+            usb.Usuario.Email,
+            usb.Usuario.Rol // ← Este es clave
+        );
 
-        db.Logs.Add(new LogActividad
-        {
-            UsuarioId  = usb.UsuarioId ?? 0,
-            TipoEvento = "LoginOK",
-            IP         = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "",
-            MAC        = dto.MacAddress,
-            FechaHora  = DateTime.UtcNow
-        });
-        await db.SaveChangesAsync();
-*/
-        return Ok("Login exitoso");
+        // Retorna el usuario autenticado como JSON
+        return Ok(usuarioDto);
     }
 }
 
@@ -146,87 +146,3 @@ curl -sk https://10.145.0.75:8443/api/auth/login \
 
 */
 
-
-
-
-/*
-using Backend_Sistema_Central.DTOs;
-using Backend_Sistema_Central.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-
-namespace Backend_Sistema_Central.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class AuthController(ApplicationDbContext db) : ControllerBase
-{
-    /// <summary>
-    ///  Login de prueba: compara UsuarioId + PIN.
-    ///  No valida certificado ni USB mientras estemos en HTTP.
-    /// </summary>
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
-    {
-        var usuario = await db.Usuarios.FirstOrDefaultAsync(u => u.Id == dto.UsuarioId);
-        if (usuario is null) return Unauthorized("Usuario no encontrado");
-
-        if (!BCrypt.Net.BCrypt.Verify(dto.Pin, usuario.PinHash))
-            return Unauthorized("PIN incorrecto");
-
-        db.Logs.Add(new LogActividad
-        {
-            UsuarioId  = usuario.Id,
-            TipoEvento = "LoginOK",
-            IP         = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "",
-            MAC        = dto.MacAddress,
-            FechaHora  = DateTime.UtcNow
-        });
-        await db.SaveChangesAsync();
-
-        return Ok("Login exitoso");
-    }
-}
-*/
-
-/*
-
-using Backend_Sistema_Central.DTOs;
-using Backend_Sistema_Central.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-
-namespace Backend_Sistema_Central.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class AuthController(ApplicationDbContext db) : ControllerBase
-{
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
-    {
-        //var cert = HttpContext.Connection.ClientCertificate;
-        //if (cert is null) return Unauthorized("Certificado requerido");
-
-        var usb = await db.DispositivosUSB.Include(u => u.Usuario)
-                      .FirstOrDefaultAsync(u => u.CertThumbprint == cert.Thumbprint);
-        if (usb is null) return Unauthorized("USB no registrado");
-
-        if (!BCrypt.Net.BCrypt.Verify(dto.Pin, usb.Usuario.PinHash))
-            return Unauthorized("PIN incorrecto");
-
-        db.Logs.Add(new LogActividad
-        {
-            UsuarioId = usb.UsuarioId,
-            TipoEvento = "LoginOK",
-            IP = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "",
-            MAC = dto.MacAddress,
-            FechaHora = DateTime.UtcNow
-        });
-        await db.SaveChangesAsync();
-
-        return Ok("Login exitoso");
-    }
-}
-
-*/

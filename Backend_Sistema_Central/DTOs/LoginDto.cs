@@ -1,3 +1,6 @@
+
+//LoginDto.cs
+
 namespace Backend_Sistema_Central.DTOs;
 
 // 1. Envío de certificado del USB al servidor
