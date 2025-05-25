@@ -1,6 +1,0 @@
-@Backend_Sistema_Cental_HostAddress = http://localhost:5015
-
-GET {{Backend_Sistema_Cental_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
