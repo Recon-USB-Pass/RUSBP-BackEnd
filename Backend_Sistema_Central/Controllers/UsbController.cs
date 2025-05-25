@@ -1,4 +1,4 @@
-// Controllers/UsbController.cs
+// Backend_Sistema_Central/Controllers/UsbController.cs
 using Backend_Sistema_Central.Models;
 using Backend_Sistema_Central.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -8,49 +8,68 @@ namespace Backend_Sistema_Central.Controllers;
 
 [ApiController]
 [Route("api/usb")]
-public class UsbController(ApplicationDbContext db, IUsbStatusService status) : ControllerBase
+public class UsbController(ApplicationDbContext db,
+                           IUsbStatusService status) : ControllerBase
 {
-    /* 0. Registrar pendrive ------------------------------------------------ */
+    /* 0. Registrar pendrive “vacío” (sólo serial + thumbprint) ───── */
     public record CrearUsbDto(string Serial, string? Thumbprint = null);
 
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearUsbDto dto)
     {
         var serial = dto.Serial.Trim().ToUpperInvariant();
-        var existente = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == serial);
-        if (existente is not null)
-            return Conflict($"Serial '{serial}' ya registrado (id={existente.Id})");
+        if (await db.DispositivosUSB.AnyAsync(u => u.Serial == serial))
+            return Conflict($"Serial '{serial}' ya registrado.");
 
-        var usb = new DispositivoUSB
+        db.DispositivosUSB.Add(new DispositivoUSB
         {
             Serial     = serial,
             Thumbprint = dto.Thumbprint,
             FechaAlta  = DateTime.UtcNow,
             Revoked    = false
-        };
-
-        db.DispositivosUSB.Add(usb);
+        });
         await db.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(Crear), new { id = usb.Id }, new { usb.Id, usb.Serial });
+        return CreatedAtAction(nameof(Crear), new { serial });
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       1)  Asignar USB a un usuario existente
-       ═════════════════════════════════════════════════════════════ */
+    /* 0-bis. Alta definitiva con RP cifrada (Agente Admin) ───────── */
+    public record RegisterDto(string Serial,
+                              string Cipher,   // base64(ciphertext)
+                              string Tag,      // base64(tag)
+                              UsbRole Rol);    // Root | Admin | Employee
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+    {
+        var serial = dto.Serial.Trim().ToUpperInvariant();
+        if (await db.DispositivosUSB.AnyAsync(u => u.Serial == serial))
+            return Conflict("Serial ya registrado");
+
+        db.DispositivosUSB.Add(new DispositivoUSB
+        {
+            Serial    = serial,
+            RpCipher  = Convert.FromBase64String(dto.Cipher),
+            RpTag     = Convert.FromBase64String(dto.Tag),
+            Rol       = dto.Rol,
+            FechaAlta = DateTime.UtcNow,
+            Revoked   = false
+        });
+        await db.SaveChangesAsync();
+        return CreatedAtAction(nameof(Register), new { serial });
+    }
+
+    /* 1. Asignar USB a usuario existente ─────────────────────────── */
     public record AsignarDto(string Serial, string UsuarioRut);
 
-    [HttpPost("asignar")]                     // POST  /api/usb/asignar
+    [HttpPost("asignar")]
     public async Task<IActionResult> Asignar([FromBody] AsignarDto dto)
     {
         var serial = dto.Serial.Trim().ToUpperInvariant();
-
         var usb  = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == serial);
         var user = await db.Usuarios       .FirstOrDefaultAsync(u => u.Rut    == dto.UsuarioRut);
 
         if (usb  is null) return NotFound("Serial inexistente");
         if (user is null) return NotFound("Usuario inexistente");
-
         if (usb.UsuarioId is not null && usb.UsuarioId != user.Id)
             return Conflict("USB ya asignado a otro usuario");
 
@@ -59,14 +78,11 @@ public class UsbController(ApplicationDbContext db, IUsbStatusService status) : 
         return Ok(new { usb.Serial, user.Rut });
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       2)  Enlace rápido vía URL  (opcional)
-       ═════════════════════════════════════════════════════════════ */
-    [HttpPost("{serial}/link/{rut}")]         // POST  /api/usb/{serial}/link/{rut}
+    /* 2. Enlace rápido vía URL (opcional) ────────────────────────── */
+    [HttpPost("{serial}/link/{rut}")]
     public async Task<IActionResult> Link(string serial, string rut)
     {
         serial = serial.Trim().ToUpperInvariant();
-
         var usb  = await db.DispositivosUSB.FirstOrDefaultAsync(u => u.Serial == serial);
         var user = await db.Usuarios       .FirstOrDefaultAsync(u => u.Rut    == rut);
 
@@ -79,10 +95,8 @@ public class UsbController(ApplicationDbContext db, IUsbStatusService status) : 
         return Ok(new { usb.Serial, user.Rut });
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       3)  ¿Está online?
-       ═════════════════════════════════════════════════════════════ */
-    [HttpGet("{serial}/online")]              // GET  /api/usb/{serial}/online
+    /* 3. ¿Está online? (monitor-ping) ────────────────────────────── */
+    [HttpGet("{serial}/online")]
     public ActionResult<bool> IsUsbOnline(string serial)
         => Ok(status.IsUsbOnline(serial.Trim().ToUpperInvariant()));
 }

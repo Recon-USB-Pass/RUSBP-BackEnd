@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-echo "⏳ Esperando a que la base de datos esté lista..."
-until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; do
+echo "⏳ Esperando a la base de datos ($DB_HOST:$DB_PORT)…"
+until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" >/dev/null 2>&1; do
   sleep 2
 done
+echo "✅ Base de datos lista."
 
-echo "✅ Base de datos lista; ejecutando migraciones EF Core..."
-dotnet Backend_Sistema_Central.dll --migrate-and-run
-echo "✅ Migraciones completadas; ejecutando la aplicación..."
+exec dotnet Backend_Sistema_Central.dll --migrate-and-run

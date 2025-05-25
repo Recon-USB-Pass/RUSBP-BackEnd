@@ -1,33 +1,20 @@
-// Models/DispositivoUSB.cs
-namespace Backend_Sistema_Central.Models
-{
-    public class DispositivoUSB
-    {
-        public int Id { get; set; }
-        public string Serial { get; set; } = "";
-        public string Thumbprint { get; set; }
-        public DateTime FechaAlta { get; set; }
-        public bool Revoked { get; set; }
-        public int? UsuarioId { get; set; }
-        public Usuario? Usuario { get; set; }
-    }
-}
-
-
-/*
+// Backend_Sistema_Central/Models/DispositivoUSB.cs
 namespace Backend_Sistema_Central.Models;
 
 public class DispositivoUSB
 {
-    public int Id             { get; set; }
-    public string Serial      { get; set; } = default!;          // PK lógica
-    public string Thumbprint  { get; set; } = default!;          // Huella del certificado X509
-    public DateTime FechaAlta { get; set; }
-    public bool   Revoked     { get; set; }                      // Si se revoca el USB
+    public int      Id         { get; set; }
+    public string   Serial     { get; set; } = "";
+    public string?  Thumbprint { get; set; }
+    public DateTime FechaAlta  { get; set; }
+    public bool     Revoked    { get; set; }
 
-    // Relación
+    // ─── Relaciones ───────────────────────────────────────────────
     public int?     UsuarioId  { get; set; }
-    public Usuario? Usuario    { get; set; } = default!;
-}
+    public Usuario? Usuario    { get; set; }
 
-*/
+    // ─── Clave envuelta ───────────────────────────────────────────
+    public byte[]   RpCipher   { get; set; } = default!;   // AES-GCM ciphertext
+    public byte[]   RpTag      { get; set; } = default!;   // AES-GCM auth-tag
+    public UsbRole  Rol        { get; set; }               // Root/Admin/Employee
+}

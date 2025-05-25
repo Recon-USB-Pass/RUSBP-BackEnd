@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend_Sistema_Central.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class InitialSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,16 +18,32 @@ namespace Backend_Sistema_Central.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UsuarioId = table.Column<int>(type: "integer", nullable: false),
-                    TipoEvento = table.Column<string>(type: "text", nullable: false),
-                    IP = table.Column<string>(type: "text", nullable: false),
-                    MAC = table.Column<string>(type: "text", nullable: false),
-                    FechaHora = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Detalle = table.Column<string>(type: "text", nullable: true)
+                    EventId = table.Column<string>(type: "text", nullable: false),
+                    UserRut = table.Column<string>(type: "text", nullable: false),
+                    UsbSerial = table.Column<string>(type: "text", nullable: false),
+                    EventType = table.Column<string>(type: "text", nullable: false),
+                    Ip = table.Column<string>(type: "text", nullable: false),
+                    Mac = table.Column<string>(type: "text", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Logs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RootKeys",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Cipher = table.Column<byte[]>(type: "bytea", nullable: false),
+                    Tag = table.Column<byte[]>(type: "bytea", nullable: false),
+                    FechaAlta = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RootKeys", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -38,7 +54,12 @@ namespace Backend_Sistema_Central.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Rut = table.Column<string>(type: "text", nullable: false),
                     Nombre = table.Column<string>(type: "text", nullable: false),
-                    PinHash = table.Column<string>(type: "text", nullable: false)
+                    PinHash = table.Column<string>(type: "text", nullable: false),
+                    Depto = table.Column<string>(type: "text", nullable: true),
+                    Email = table.Column<string>(type: "text", nullable: true),
+                    Rol = table.Column<string>(type: "text", nullable: true),
+                    Ip = table.Column<string>(type: "text", nullable: true),
+                    Mac = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -52,9 +73,13 @@ namespace Backend_Sistema_Central.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Serial = table.Column<string>(type: "text", nullable: false),
-                    CertThumbprint = table.Column<string>(type: "text", nullable: false),
-                    FechaAsignacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UsuarioId = table.Column<int>(type: "integer", nullable: false)
+                    Thumbprint = table.Column<string>(type: "text", nullable: true),
+                    FechaAlta = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Revoked = table.Column<bool>(type: "boolean", nullable: false),
+                    UsuarioId = table.Column<int>(type: "integer", nullable: true),
+                    RpCipher = table.Column<byte[]>(type: "bytea", nullable: false),
+                    RpTag = table.Column<byte[]>(type: "bytea", nullable: false),
+                    Rol = table.Column<byte>(type: "smallint", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -93,6 +118,9 @@ namespace Backend_Sistema_Central.Migrations
 
             migrationBuilder.DropTable(
                 name: "Logs");
+
+            migrationBuilder.DropTable(
+                name: "RootKeys");
 
             migrationBuilder.DropTable(
                 name: "Usuarios");

@@ -1,28 +1,43 @@
+version: "3.9"
+
+############################################
+# Recon-USB-Pass · Back-End stack
+#   – ASP.NET Core 8 API  +  PostgreSQL 16 –
+############################################
 
 services:
+  # ────────────────────────────────────────
+  # 1) API  –  Kestrel HTTP 8080 / HTTPS 8443
+  # ────────────────────────────────────────
   api:
     build: .
     container_name: rusbp-api
     ports:
-      - "8080:8080"   # HTTP  (Swagger en dev)
-      - "8443:8443"   # HTTPS (cliente real)
+      - "8080:8080"          # HTTP  (Swagger)
+      - "8443:8443"          # HTTPS (agentes reales)
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      # Contraseña para el certificado
-      PFX_PASSWORD: usbpass
-      # Variables para entrypoint.sh
-      DB_HOST: db
-      DB_PORT: 5432
+      PFX_PASSWORD: usbpass          # pass del cert. TLS
+      DB_HOST: db                    # hostname del servicio Postgres
+      DB_PORT: 5432                  # puerto *dentro* del contenedor db
       DB_USER: seguridad
       DB_PASS: seguridad123
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - backend
 
+  # ────────────────────────────────────────
+  # 2) Base de datos  –  PostgreSQL 16
+  #    (publicada en el host como 5433)
+  # ────────────────────────────────────────
   db:
     image: postgres:16
     container_name: rusbp-db
     restart: unless-stopped
+    ports:
+      - "5433:5432"          # ← host:5433  →  contenedor:5432
     environment:
       POSTGRES_USER: seguridad
       POSTGRES_PASSWORD: seguridad123
@@ -33,6 +48,18 @@ services:
       test: ["CMD-SHELL", "pg_isready -U seguridad"]
       interval: 5s
       retries: 10
+    networks:
+      - backend
 
+# ──────────────────────────────────────────
+#   Volumen persistente para la BD
+# ──────────────────────────────────────────
 volumes:
   pgdata:
+
+# ──────────────────────────────────────────
+#   Red interna
+# ──────────────────────────────────────────
+networks:
+  backend:
+    driver: bridge
