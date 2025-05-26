@@ -13,7 +13,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
-        // ─── DispositivoUSB ────────────────────────────────────────
+        // ─── DispositivoUSB ──────────────────────────────
         mb.Entity<DispositivoUSB>()
           .HasIndex(u => u.Serial)
           .IsUnique();
@@ -25,7 +25,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
           .OnDelete(DeleteBehavior.Cascade)
           .IsRequired(false);
 
-        // byte[] → bytea (implícito)
         mb.Entity<DispositivoUSB>()
           .Property(u => u.RpCipher)
           .IsRequired();
@@ -36,10 +35,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
 
         mb.Entity<DispositivoUSB>()
           .Property(u => u.Rol)
-          .HasConversion<byte>()   // enum → smallint
+          .HasConversion<byte>()
           .IsRequired();
 
-        // ─── Usuario ───────────────────────────────────────────────
+        // ─── Usuario ─────────────────────────────────────
         mb.Entity<Usuario>()
           .HasIndex(u => u.Rut)
           .IsUnique();

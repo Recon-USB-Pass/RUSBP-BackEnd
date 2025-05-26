@@ -1,6 +1,7 @@
 // Backend_Sistema_Central/Controllers/UsbController.cs
 using Backend_Sistema_Central.Models;
 using Backend_Sistema_Central.Services;
+using Backend_Sistema_Central.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,9 @@ namespace Backend_Sistema_Central.Controllers;
 
 [ApiController]
 [Route("api/usb")]
-public class UsbController(ApplicationDbContext db,
-                           IUsbStatusService status) : ControllerBase
+public class UsbController(ApplicationDbContext db, IUsbStatusService status) : ControllerBase
 {
-    /* 0. Registrar pendrive “vacío” (sólo serial + thumbprint) ───── */
+    // 0. Alta parcial (serial + thumbprint opcional)
     public record CrearUsbDto(string Serial, string? Thumbprint = null);
 
     [HttpPost]
@@ -32,11 +32,8 @@ public class UsbController(ApplicationDbContext db,
         return CreatedAtAction(nameof(Crear), new { serial });
     }
 
-    /* 0-bis. Alta definitiva con RP cifrada (Agente Admin) ───────── */
-    public record RegisterDto(string Serial,
-                              string Cipher,   // base64(ciphertext)
-                              string Tag,      // base64(tag)
-                              UsbRole Rol);    // Root | Admin | Employee
+    // 0-bis. Alta definitiva con cipher/tag y rol
+    public record RegisterDto(string Serial, string Cipher, string Tag, UsbRole Rol);
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
@@ -58,7 +55,7 @@ public class UsbController(ApplicationDbContext db,
         return CreatedAtAction(nameof(Register), new { serial });
     }
 
-    /* 1. Asignar USB a usuario existente ─────────────────────────── */
+    // 1. Asignar USB a usuario existente
     public record AsignarDto(string Serial, string UsuarioRut);
 
     [HttpPost("asignar")]
@@ -78,7 +75,7 @@ public class UsbController(ApplicationDbContext db,
         return Ok(new { usb.Serial, user.Rut });
     }
 
-    /* 2. Enlace rápido vía URL (opcional) ────────────────────────── */
+    // 2. Link rápido vía URL (opcional)
     [HttpPost("{serial}/link/{rut}")]
     public async Task<IActionResult> Link(string serial, string rut)
     {
@@ -95,8 +92,39 @@ public class UsbController(ApplicationDbContext db,
         return Ok(new { usb.Serial, user.Rut });
     }
 
-    /* 3. ¿Está online? (monitor-ping) ────────────────────────────── */
+    // 3. Online-ping (SignalR)
     [HttpGet("{serial}/online")]
     public ActionResult<bool> IsUsbOnline(string serial)
         => Ok(status.IsUsbOnline(serial.Trim().ToUpperInvariant()));
+
+    // 4. RECOVER: Recupera el recovery pass cifrado según política de roles
+    [HttpPost("recover")]
+    public async Task<ActionResult<UsbRecoverResponseDto>> Recover([FromBody] UsbRecoverRequestDto dto)
+    {
+        var serial = dto.Serial.Trim().ToUpperInvariant();
+        var usb = await db.DispositivosUSB
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.Serial == serial && !u.Revoked);
+
+        if (usb is null)
+            return NotFound("USB no registrado o revocado.");
+
+        // • 0 = Bootstrap (solo Root)
+        if (dto.AgentType == UsbRole.Root && usb.Rol != UsbRole.Root)
+            return Forbid("Solo Root puede recuperar claves de Root.");
+
+        // • 1 = Admin (Root o Admin)
+        if (dto.AgentType == UsbRole.Admin && usb.Rol == UsbRole.Employee)
+            return Forbid("Admin no puede recuperar claves de Employee.");
+
+        // • 2 = Employee (Root, Admin o Employee) → siempre OK
+
+        var resp = new UsbRecoverResponseDto
+        {
+            Cipher = Convert.ToBase64String(usb.RpCipher),
+            Tag    = Convert.ToBase64String(usb.RpTag),
+            Rol    = usb.Rol
+        };
+        return Ok(resp);
+    }
 }
