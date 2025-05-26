@@ -103,4 +103,10 @@ Console.WriteLine("Hash aqui CTM");
 Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("1234"));
 Console.WriteLine("Hash aqui CTM");
 
+app.Logger.LogInformation(
+    "🟢  API iniciado. Contenedor IP {ip}. Puertos HTTP {http} / HTTPS {https}",
+    System.Net.Dns.GetHostEntry("host.docker.internal").AddressList.FirstOrDefault(),
+    8080, 8443);
+
+
 app.Run();

@@ -10,7 +10,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
     public DbSet<Usuario>        Usuarios        => Set<Usuario>();
     public DbSet<DispositivoUSB> DispositivosUSB => Set<DispositivoUSB>();
     public DbSet<LogActividad>   Logs            => Set<LogActividad>();
-    public DbSet<RootKey>        RootKeys        => Set<RootKey>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -39,15 +38,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
           .Property(u => u.Rol)
           .HasConversion<byte>()   // enum → smallint
           .IsRequired();
-
-        // ─── RootKey ───────────────────────────────────────────────
-        mb.Entity<RootKey>()
-          .Property(r => r.Cipher)
-          .IsRequired();           // bytea
-
-        mb.Entity<RootKey>()
-          .Property(r => r.Tag)
-          .IsRequired();           // bytea
 
         // ─── Usuario ───────────────────────────────────────────────
         mb.Entity<Usuario>()
