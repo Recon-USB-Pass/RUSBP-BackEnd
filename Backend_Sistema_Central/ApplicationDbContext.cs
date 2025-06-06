@@ -11,6 +11,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
     public DbSet<DispositivoUSB> DispositivosUSB => Set<DispositivoUSB>();
     public DbSet<LogActividad>   Logs            => Set<LogActividad>();
 
+    // <<<<<<<<<<<<<<<< NUEVO: DbSet para registros de acceso >>>>>>>>>>>>>>>>
+    public DbSet<AccesoLog>      Accesos         => Set<AccesoLog>();
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
     protected override void OnModelCreating(ModelBuilder mb)
     {
         // ─── DispositivoUSB ──────────────────────────────
@@ -42,5 +46,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opt)
         mb.Entity<Usuario>()
           .HasIndex(u => u.Rut)
           .IsUnique();
+
+        // ─── AccesoLog ──────────────────────────────────
+        mb.Entity<AccesoLog>()
+          .HasIndex(a => a.SerialUsb);
+        mb.Entity<AccesoLog>()
+          .HasIndex(a => a.Rut);
+
+        mb.Entity<AccesoLog>()
+          .Property(a => a.Rut).IsRequired();
+        mb.Entity<AccesoLog>()
+          .Property(a => a.SerialUsb).IsRequired();
+        mb.Entity<AccesoLog>()
+          .Property(a => a.Ip).IsRequired();
+        mb.Entity<AccesoLog>()
+          .Property(a => a.Mac).IsRequired();
+        mb.Entity<AccesoLog>()
+          .Property(a => a.Fecha).IsRequired();
     }
 }

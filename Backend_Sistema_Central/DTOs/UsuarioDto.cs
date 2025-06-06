@@ -6,5 +6,6 @@ public record UsuarioDto(
     string? Mac,
     string? Depto,
     string? Email,
-    string? Rol
+    string? Rol,
+    string? Serial     // <--- Nuevo campo, separado por coma
 );

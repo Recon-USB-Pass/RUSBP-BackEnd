@@ -23,6 +23,7 @@ public class UsuariosController(ApplicationDbContext db) : ControllerBase
     [HttpGet]
     public async Task<IEnumerable<UsuarioDto>> GetAll()
         => await db.Usuarios
+            .Include(u => u.USBs) // <--- Solo si tu modelo Usuario tiene la navegación USBs
             .Select(u => new UsuarioDto(
                 u.Id,
                 u.Rut,
@@ -31,13 +32,16 @@ public class UsuariosController(ApplicationDbContext db) : ControllerBase
                 u.Mac,
                 u.Depto,
                 u.Email,
-                u.Rol))
+                u.Rol,
+                u.USBs.OrderBy(x => x.Id).Select(x => x.Serial).FirstOrDefault() // <--- O el campo real
+            ))
             .ToListAsync();
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<UsuarioDto>> GetById(int id)
     {
         var dto = await db.Usuarios
+            .Include(u => u.USBs)
             .Where(u => u.Id == id)
             .Select(u => new UsuarioDto(
                 u.Id,
@@ -47,11 +51,15 @@ public class UsuariosController(ApplicationDbContext db) : ControllerBase
                 u.Mac,
                 u.Depto,
                 u.Email,
-                u.Rol))
+                u.Rol,
+                u.USBs.OrderBy(x => x.Id).Select(x => x.Serial).FirstOrDefault()
+            ))
             .SingleOrDefaultAsync();
 
         return dto is null ? NotFound() : Ok(dto);
     }
+
+
 
     //  UsuariosController.cs  → devolver Id SIEMPRE
     [HttpPost]

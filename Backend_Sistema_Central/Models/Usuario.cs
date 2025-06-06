@@ -9,8 +9,8 @@ public class Usuario
     public string? Depto { get; set; }
     public string? Email { get; set; }
     public string? Rol { get; set; }
-    public ICollection<DispositivoUSB> USBs { get; set; } = [];
-
+    public ICollection<DispositivoUSB> USBs { get; set; } = new List<DispositivoUSB>();
     public string? Ip { get; set; }
     public string? Mac { get; set; }
+    
 }

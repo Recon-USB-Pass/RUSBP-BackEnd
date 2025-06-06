@@ -1,5 +1,3 @@
-version: "3.9"
-
 ############################################
 # Recon-USB-Pass · Back-End stack
 #   – ASP.NET Core 8 API  +  PostgreSQL 16 –
