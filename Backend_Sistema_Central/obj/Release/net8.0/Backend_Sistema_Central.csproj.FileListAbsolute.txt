@@ -119,3 +119,9 @@ C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Bac
 C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\Backend_Sistema_Central.deps.json
 C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\Backend_Sistema_Central.runtimeconfig.json
 C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\Backend_Sistema_Central.staticwebassets.endpoints.json
+C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\publish\web.config
+C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\publish\appsettings.Development.json
+C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\publish\appsettings.json
+C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\publish\Backend_Sistema_Central.deps.json
+C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\publish\Backend_Sistema_Central.runtimeconfig.json
+C:\Users\zarat\Desktop\2025\Seminario de Titulo\Recon-USB-Pass\RUSBP-BackEnd\Backend_Sistema_Central\bin\Release\net8.0\publish\publish\Backend_Sistema_Central.staticwebassets.endpoints.json

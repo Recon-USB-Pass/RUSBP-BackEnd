@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      # ---------- Restaurar dependencias ----------
+      - name: Restore
+        run: dotnet restore RUSBP-BackEnd.sln
+
+      # ---------- Compilar en Release ----------
+      - name: Build
+        run: dotnet build RUSBP-BackEnd.sln --no-restore -c Release
+
+      # ---------- Ejecutar TESTS UNITARIOS ----------
+      - name: Test (unit) + cobertura
+        run: dotnet test RUSBP-BackEnd.sln --no-build -c Release --collect:"XPlat Code Coverage"
+
+      # ---------- Guardar resultados como artefacto ----------
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/**/*'

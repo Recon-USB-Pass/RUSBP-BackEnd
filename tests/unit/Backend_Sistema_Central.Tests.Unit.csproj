@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+
+    <!-- nombre único dentro de la solución -->
+    <AssemblyName>Backend_Sistema_Central.Tests.Unit</AssemblyName>
+    <RootNamespace>Backend_Sistema_Central.Tests.Unit</RootNamespace>
+
+    <IsPackable>false</IsPackable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk"          Version="17.12.0" />
+    <PackageReference Include="xunit"                           Version="2.4.2"   />
+    <PackageReference Include="xunit.runner.visualstudio"       Version="2.4.5"   />
+    <PackageReference Include="FluentAssertions"                Version="7.0.0"   />
+    <PackageReference Include="coverlet.collector"              Version="6.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.EntityFrameworkCore"                Version="8.0.15" />
+    <PackageReference Update="Microsoft.EntityFrameworkCore.Relational"     Version="8.0.15" />
+    <PackageReference Update="Microsoft.EntityFrameworkCore.Abstractions"   Version="8.0.15" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Referencia al proyecto a probar -->
+    <ProjectReference Include="..\..\Backend_Sistema_Central\Backend_Sistema_Central.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -14,5 +14,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
+    <PackageReference Update="Microsoft.EntityFrameworkCore" Version="8.0.15" />
+    <PackageReference Update="Microsoft.EntityFrameworkCore.Relational" Version="8.0.15" />
+    <PackageReference Update="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.15" />
   </ItemGroup>
 </Project>
